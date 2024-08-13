@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gojs test</title>
+    <script src="https://unpkg.com/gojs/release/go-debug.js"></script>
+  </head>
+  <body>
+    <div
+      id="myDiagramDiv"
+      style="
+        width: 900px;
+        height: 600px;
+        border: 1px solid black;
+        background-color: #fff;
+      "
+    ></div>
+    <script type="module" src="/main.js"></script>
+
+    <script src="./Figures.js"></script>
+    <script>
+      const myDiagram = new go.Diagram("myDiagramDiv", {
+        "undoManager.isEnabled": true, //可以使用復原、重做按鍵
+      });
+
+      // 畫面上的元件
+      const addParts = (part) => {
+        myDiagram.add(
+          new go.Part("Spot", {
+            selectionAdorned: false, // 不要顯示選取時的實線框
+            resizable: false,
+            resizeObjectName: "SHAPE", // 是否要調整大小
+            rotatable: false,
+            rotateObjectName: "SHAPE", // 是否要旋轉元件
+          }).add(part)
+        );
+      };
+      const part1 = new go.Picture("./img/g-silver.png");
+      const part2 = new go.Picture("./img/g-section-06.png");
+      addParts(part2);
+      addParts(part1);
+
+      // 資料榜定
+      myDiagram.nodeTemplate = new go.Node("Auto").add(
+        new go.Shape("RoundedRectangle", { fill: "white" }).bind(
+          "fill",
+          "color"
+        ), // shape.fill = data.color
+        new go.TextBlock({ margin: 5 }).bind("text") // textblock.text = data.key
+      );
+
+      myDiagram.linkTemplate = new go.Link().add(
+        new go.Shape()
+          .bind("stroke", "color") // shape.stroke = data.color
+          .bind("strokeWidth", "thick"), // shape.strokeWidth = data.thick
+        new go.Shape({ toArrow: "", fill: null })
+          .bind("stroke", "color") // shape.stroke = data.color
+          .bind("strokeWidth", "thick") // shape.strokeWidth = data.thick
+      );
+
+      const nodeDataArray = [
+        { key: 1, text: "", color: "lightblue" },
+        { key: 2, text: "", color: "pink" },
+      ];
+      const linkDataArray = [{ from: 1, to: 2, color: "blue", thick: 5 }];
+      myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+    </script>
+  </body>
+</html>

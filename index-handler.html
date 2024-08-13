@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gojs test</title>
+    <script src="https://unpkg.com/gojs/release/go-debug.js"></script>
+    
+  </head>
+  <body>
+    <div id="myDiagramDiv" style="width:900px; height: 600px; border: 1px solid black; background-color: #DAE4E4;"></div>
+    <script type="module" src="/main.js"></script>
+    
+    <script src="./Figures.js"></script>
+    <script>
+      const myDiagram = new go.Diagram("myDiagramDiv", {
+          "undoManager.isEnabled": true
+        });
+        myDiagram.model = new go.Model([
+          { text: "Alpha"},
+          { text: "Beta"}
+        ]);
+
+      // 畫面上的元件
+      const addShape = ( shape )=>{
+        myDiagram.add(
+          new go.Part("Horizontal")
+            .add(
+              shape  // default fill and stroke are "black"
+            ));};
+
+          const shape1 = new go.Shape({ row: 0, column: 1, width: 10, fill: null, stroke: null });
+          const W_geometry = go.Geometry.parse("M 0,0 L 10,50 20,10 30,50 40,0", false);
+          const bluered = new go.Brush("Linear", { 0.0: "blue", 1.0: "red" });
+          const yellowgreen = new go.Brush("Linear", { 0.0: "yellow", 1.0: "green" });
+          const grays = new go.Brush("Linear", { 1.0: "black", 0.0: "lightgray" });
+          const shape2 = new go.Shape({ row: 0, column: 2,
+                      figure: "Club", width: 40, height: 40, angle: 45, scale: 2,
+                      fill: bluered,
+                      stroke: grays, strokeWidth: 2,
+                      background: yellowgreen
+                    });
+          const shape3 = new go.Shape({ row: 0, column: 1, width: 10, fill: null, stroke: null });;
+
+
+        go.Shape.defineFigureGenerator('FramedRectangle', (shape, w, h) => {
+          let param1 = shape ? shape.parameter1 : NaN;
+          let param2 = shape ? shape.parameter2 : NaN;
+          if (isNaN(param1))
+              param1 = 8; // default values PARAMETER 1 is for WIDTH
+          if (isNaN(param2))
+              param2 = 8; // default values PARAMETER 2 is for HEIGHT
+          const geo = new go.Geometry();
+          const fig = new go.PathFigure(0, 0, true);
+          geo.add(fig);
+          // outer rectangle, clockwise
+          fig.add(new go.PathSegment(go.SegmentType.Line, w, 0));
+          fig.add(new go.PathSegment(go.SegmentType.Line, w, h));
+          fig.add(new go.PathSegment(go.SegmentType.Line, 0, h).close());
+          if (param1 < w / 2 && param2 < h / 2) {
+              // inner rectangle, counter-clockwise
+              fig.add(new go.PathSegment(go.SegmentType.Move, param1, param2)); // subpath
+              fig.add(new go.PathSegment(go.SegmentType.Line, param1, h - param2));
+              fig.add(new go.PathSegment(go.SegmentType.Line, w - param1, h - param2));
+              fig.add(new go.PathSegment(go.SegmentType.Line, w - param1, param2).close());
+          }
+          geo.setSpots(0, 0, 1, 1, param1, param2, -param1, -param2);
+          return geo;
+        });
+
+
+      myDiagram.nodeTemplate =
+        new go.Part("Spot",
+            {
+              selectionAdorned: false,  // 不要顯示選取時的實線框
+              resizable: true, resizeObjectName: "SHAPE",  // 是否要調整大小
+              rotatable: true, rotateObjectName: "SHAPE",  // 是否要旋轉元件
+                                                            // without rotating the label
+            })
+          .add(
+            new go.Shape('FramedRectangle',
+                {
+                  name: "SHAPE",
+                  // fill: new go.Brush("Linear", { 0.0: "white", 1.0: "gray" }),
+                  fill: new go.Brush("Linear", { 0.0: "white", 1.0: "gray" }),
+                  desiredSize: new go.Size(100, 50)
+                })
+              .bind("parameter1", "p1")
+              .bind("parameter2", "p2"),
+            new go.TextBlock({ stroke: "blue" })
+              .bindObject("text", "", s => `${s.parameter1}, ${s.parameter2}`, null, "SHAPE")
+          );
+
+      myDiagram.model = new go.Model([
+        { },  // unspecified parameter values treated as 8 by "FramedRectangle" figure
+        { p1: 0 },
+        { p1: 5 },
+        { p1: 15 },
+        { p1: 5, p2: 5 },
+        { p1: 15, p2: 15 },
+      ]);
+
+      addShape(shape1);
+      addShape(shape2);
+      addShape(shape3);
+
+      diagram.layout = new go.GridLayout();
+
+// Using a black "frame" geometry to hide part of the image.
+// Typically this frame is the same color as the Diagram background or the background of the Node.
+diagram.add(
+  new go.Part("Spot", { scale: 2 })
+    .add(
+      new go.Picture("../samples/images/55x55.png",
+          { width: 55, height: 55, background: 'red' }),
+      new go.Shape({
+          width: 55, height: 55,
+          geometryString: "f M0 0 L100 0 L100 100 L0 100 z M5,50a45,45 0 1,0 90,0a45,45 0 1,0 -90,0 z",
+          fill: 'black', strokeWidth: 0
+        })
+    )
+  );
+
+// Using Panel.isClipping
+diagram.add(
+  new go.Part("Spot", { scale: 2, isClipping: true })
+    .add(
+      new go.Shape("Circle", { width: 55, strokeWidth: 0 } ),
+      new go.Picture("../samples/images/55x55.png",
+          { width: 55, height: 55 })
+    )
+  );
+
+// Using Panel.isClipping and also having a surrounding border behind it
+diagram.add(
+  new go.Part("Spot", { scale: 2 })
+    .add(
+      // the background border
+      new go.Shape("Circle", { width: 65, strokeWidth: 0, fill: 'red' } ),
+      // the same clipping panel as the second example, above
+      new go.Panel("Spot", { isClipping: true })
+        .add(
+          new go.Shape("Circle", { width: 55, strokeWidth: 0 } ),
+          new go.Picture("../samples/images/55x55.png",
+              { width: 55, height: 55 })
+        )
+    )
+  );
+    </script>
+  </body>
+</html>

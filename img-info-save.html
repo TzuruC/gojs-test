@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gojs test</title>
+    <script src="https://unpkg.com/gojs/release/go-debug.js"></script>
+    
+  </head>
+  <body>
+    <div id="myDiagramDiv" style="width:900px; height: 600px; border: 1px solid black; background-color: #DAE4E4;"></div>
+    <div>
+      <div>
+        <button id="SaveButton" onclick="save()">節省 </button>
+        <button id="LoadButton" onclick="load()">載入 </button>
+        以 JSON 格式儲存的圖表模型：
+      </div>
+  
+      <textarea id="mySavedModel" style="width: 100%; height: 250px">
+      </textarea>
+      
+    </div>
+    <script type="module" src="/main.js"></script>
+    
+    <script src="./Figures.js"></script>
+    <script>
+function init() {
+  const $ = go.GraphObject.make; // 定義模板
+
+  // 初始化圖表
+  const myDiagram = $(go.Diagram, "myDiagramDiv", {
+    "undoManager.isEnabled": true, // 啟用復原功能
+    "linkingTool.isEnabled": true, // 啟用連結工具
+    "relinkingTool.isEnabled": true // 啟用重新連結工具
+  });
+
+  // 定義節點模板
+  myDiagram.nodeTemplate =
+    $(go.Node, "Auto")
+      .add(
+        $(go.Shape, "Rectangle", { fill: "lightgray" }),
+        $(go.Panel, "Table")
+          .addColumnDefinition(0, { alignment: go.Spot.Left })
+          .addColumnDefinition(2, { alignment: go.Spot.Right })
+          .add(
+            $(go.TextBlock,  // the node title
+              { column: 0, row: 0, columnSpan: 3, alignment: go.Spot.Center,
+                font: "bold 10pt sans-serif", margin: new go.Margin(4, 2) })
+              .bind("text"),
+            $(go.Panel, "Horizontal",
+              { column: 0, row: 1 })
+              .add(
+                $(go.Shape, // the "A" port
+                  { width: 6, height: 6, portId: "A", toSpot: go.Spot.Left,
+                    toLinkable: true, toMaxLinks: 1 }),  // allow user-drawn links to here
+                $(go.TextBlock, "A")  // "A" port label
+              ),
+            $(go.Panel, "Horizontal",
+              { column: 0, row: 2 })
+              .add(
+                $(go.Shape, // the "B" port
+                  { width: 6, height: 6, portId: "B", toSpot: go.Spot.Left,
+                    toLinkable: true, toMaxLinks: 1 }),  // allow user-drawn links to here
+                $(go.TextBlock, "B")  // "B" port label
+              ),
+            $(go.Panel, "Horizontal",
+              { column: 2, row: 1, rowSpan: 2 })
+              .add(
+                $(go.TextBlock, "Out"),  // "Out" port label
+                $(go.Shape, // the "Out" port
+                  { width: 6, height: 6, portId: "Out", fromSpot: go.Spot.Right,
+                    fromLinkable: true, cursor: "pointer" })  // allow user-drawn links from here
+              )
+          )
+      );
+
+  // 定義連結模板
+  myDiagram.linkTemplate =
+    $(go.Link, { routing: go.Routing.Orthogonal, corner: 3 })
+      .add(
+        $(go.Shape),
+        $(go.Shape, { toArrow: "Standard" })
+      );
+
+  // 設置圖表佈局
+  myDiagram.layout = $(go.LayeredDigraphLayout, { columnSpacing: 10 });
+
+  // 設置臨時連結路由
+  myDiagram.toolManager.linkingTool.temporaryLink.routing = go.Routing.Orthogonal;
+
+  // 設置圖表模型
+  myDiagram.model = $(go.GraphLinksModel,
+    {
+      linkFromPortIdProperty: "fromPort",  // required information:
+      linkToPortIdProperty: "toPort",      // identifies data property names
+      nodeDataArray: [
+        { key: 1, text: "Add1" },
+        { key: 2, text: "Add2" },
+        { key: 3, text: "Subtract1" }
+      ],
+      linkDataArray: [
+        // no predeclared links
+      ]
+    });
+
+  // 新增節點函數
+  window.addNode = function() {
+    myDiagram.startTransaction("add node");
+    const newNodeData = { key: `Node${myDiagram.model.nodeDataArray.length + 1}`, text: `Node${myDiagram.model.nodeDataArray.length + 1}` };
+    myDiagram.model.addNodeData(newNodeData);
+    myDiagram.commitTransaction("add node");
+  };
+}
+
+window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+  </body>
+</html>
